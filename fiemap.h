@@ -6,19 +6,30 @@
 #include <stdint.h>
 
 /*
- * Given a filled fiemap structure, extract the struct fiemap_extent
- * which covers the loff offset.
- * If index is not NULL, then it will be filled with the extent's index.
- * If no extent is found, returns NULL and index is garbage.
- * The returned value must not be used after fiemap is freed, and must not
- * be freed directly either.
+ * Given a filled fiemap structure, extract the struct fiemap_extent which
+ * covers loff.
+ *
+ * Sparse holes have no kernel FIEMAP record. For those ranges this returns a
+ * thread-local synthetic extent flagged FIEMAP_EXTENT_UNWRITTEN, allowing
+ * callers to advance over the hole without treating it as a file-changing
+ * race. The synthetic value must be consumed before the next get_extent()
+ * call in the same thread.
+ *
+ * If index is not NULL, it receives the real extent index or the insertion
+ * position of a synthetic hole. If loff is at or beyond the logical EOF,
+ * returns NULL and index is garbage.
+ *
+ * The returned value must not be used after fiemap is freed, and must not be
+ * freed directly either.
  */
 struct fiemap_extent *get_extent(struct fiemap *fiemap, size_t loff,
 				 unsigned int *index);
 
 /*
- * Extract the extents mapping of a file.
- * May not return all extents if the file changed while this function is
+ * Extract the extent mapping of a file. Reported extent lengths are clamped
+ * to the logical EOF so downstream FIDEDUPERANGE requests cannot cross it.
+ *
+ * May not return all extents if the file changed while this function was
  * running.
  */
 struct fiemap *do_fiemap(int fd);
