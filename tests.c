@@ -34,7 +34,7 @@ static struct fiemap *alloc_test_fiemap(unsigned int count, uint64_t file_size)
 
 	fiemap = calloc(1, sizeof(*fiemap) +
 			count * sizeof(struct fiemap_extent));
-	mu_assert(fiemap != NULL, "Unable to allocate test FIEMAP");
+	abort_on(!fiemap);
 
 	fiemap->fm_mapped_extents = count;
 	fiemap->fm_extent_count = count;
